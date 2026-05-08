@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>台灣小學高年級數學評量系統</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --blue: #1a56db; --blue-light: #eff6ff; --blue-dark: #1447b8;
+  --green: #0e9f6e; --green-light: #ecfdf5;
+  --red: #ef4444; --red-light: #fef2f2;
+  --amber: #f59e0b; --amber-light: #fffbeb;
+  --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0;
+  --gray-400: #94a3b8; --gray-600: #475569; --gray-800: #1e293b;
+  --radius: 12px; --radius-lg: 16px;
+}
+body {
+  font-family: 'Noto Sans TC', -apple-system, sans-serif;
+  background: var(--gray-100);
+  min-height: 100vh;
+  color: var(--gray-800);
+}
+.page { display: none; }
+.page.active { display: block; }
+
+/* ====== TEACHER PAGE ====== */
+#page-teacher { max-width: 960px; margin: 0 auto; padding: 20px; }
+
+.hero {
+  background: linear-gradient(135deg, #1a56db 0%, #0e9f6e 100%);
+  border-radius: var(--radius-lg); padding: 32px 36px; color: white;
+  margin-bottom: 28px; position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; right: -40px; top: -40px;
+  width: 220px; height: 220px; border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+}
+.hero h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.3px; }
+.hero p { font-size: 14px; opacity: 0.85; line-height: 1.6; }
+.hero-badges { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.hero-badge {
+  background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600;
+}
+
+.section-label {
+  font-size: 13px; font-weight: 700; color: var(--gray-600);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.section-label::before {
+  content: ''; width: 3px; height: 14px; background: var(--blue);
+  border-radius: 3px;
+}
+
+.q-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 28px; }
+.q-card {
+  background: white; border-radius: var(--radius); border: 1.5px solid var(--gray-200);
+  padding: 14px; cursor: pointer; transition: all 0.18s;
+}
+.q-card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(26,86,219,0.12); }
+.q-num { font-size: 10px; font-weight: 700; color: var(--gray-400); margin-bottom: 4px; letter-spacing: 0.5px; }
+.q-title { font-size: 13px; font-weight: 700; color: var(--gray-800); margin-bottom: 4px; }
+.q-snippet { font-size: 11px; color: var(--gray-600); line-height: 1.5; }
+.tag { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 700; margin-top: 6px; }
+.tag-n { background:#dbeafe; color:#1e40af; }
+.tag-f { background:#fce7f3; color:#9d174d; }
+.tag-g { background:#d1fae5; color:#065f46; }
+.tag-a { background:#fef3c7; color:#92400e; }
+.tag-s { background:#ede9fe; color:#5b21b6; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--blue), var(--green));
+  color: white; border: none; border-radius: var(--radius);
+  padding: 15px 32px; font-size: 15px; font-weight: 700;
+  cursor: pointer; width: 100%; transition: opacity 0.2s;
+  margin-bottom: 28px; letter-spacing: 0.2px;
+}
+.btn-primary:hover { opacity: 0.9; }
+
+/* QR Section */
+.qr-panel {
+  background: white; border-radius: var(--radius-lg);
+  border: 1.5px solid var(--gray-200); padding: 28px;
+}
+.qr-url-input-row {
+  display: flex; gap: 10px; margin-bottom: 20px; align-items: center;
+}
+.qr-url-input-row label { font-size: 13px; font-weight: 600; color: var(--gray-600); white-space: nowrap; }
+.qr-url-input {
+  flex: 1; padding: 10px 14px; border: 1.5px solid var(--gray-200);
+  border-radius: 10px; font-size: 13px; font-family: monospace;
+  color: var(--gray-800);
+}
+.qr-url-input:focus { outline: none; border-color: var(--blue); }
+.btn-gen {
+  background: var(--blue); color: white; border: none;
+  border-radius: 10px; padding: 10px 20px; font-size: 13px;
+  font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.btn-gen:hover { background: var(--blue-dark); }
+
+.qr-notice {
+  background: var(--amber-light); border: 1px solid #fde68a;
+  border-radius: 10px; padding: 14px 16px;
+  font-size: 12px; color: #92400e; line-height: 1.6; margin-bottom: 20px;
+}
+
+.qr-display { text-align: center; }
+#qrcode-img { display: inline-block; padding: 16px; background: white; border: 2px solid var(--gray-200); border-radius: var(--radius); }
+.qr-current-url { font-size: 12px; color: var(--gray-400); margin-top: 8px; font-family: monospace; word-break: break-all; }
+.btn-start-demo {
+  margin-top: 20px; background: var(--green-light);
+  color: var(--green); border: 1.5px solid var(--green);
+  border-radius: var(--radius); padding: 12px 28px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-start-demo:hover { background: var(--green); color: white; }
+
+/* ====== QUIZ PAGE ====== */
+#page-quiz { max-width: 680px; margin: 0 auto; padding: 16px; }
+.quiz-header {
+  background: linear-gradient(135deg, var(--blue), var(--green));
+  border-radius: var(--radius-lg); padding: 20px 22px; color: white;
+  margin-bottom: 18px; position: sticky; top: 16px; z-index: 10;
+  box-shadow: 0 4px 20px rgba(26,86,219,0.25);
+}
+.quiz-meta { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.quiz-topic { font-size: 16px; font-weight: 700; }
+.quiz-counter { text-align: right; }
+.quiz-counter .big { font-size: 22px; font-weight: 800; }
+.quiz-counter .sm { font-size: 11px; opacity: 0.8; }
+.prog-row { display: flex; align-items: center; gap: 10px; }
+.prog-bar { flex: 1; height: 5px; background: rgba(255,255,255,0.3); border-radius: 5px; overflow: hidden; }
+.prog-fill { height: 100%; background: white; border-radius: 5px; transition: width 0.4s ease; }
+.prog-pct { font-size: 12px; font-weight: 700; min-width: 30px; text-align: right; }
+
+.q-card-main {
+  background: white; border-radius: var(--radius-lg);
+  border: 1.5px solid var(--gray-200); padding: 22px;
+  margin-bottom: 14px; animation: fadeSlide 0.25s ease;
+}
+@keyframes fadeSlide { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+.q-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.q-num-circle {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--blue); color: white;
+  font-size: 14px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.q-tag { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 700; }
+.q-cat { font-size: 12px; color: var(--gray-400); margin-left: auto; }
+
+.q-text { font-size: 16px; color: var(--gray-800); line-height: 1.85; margin-bottom: 18px; font-weight: 500; }
+
+.scratch {
+  background: var(--gray-50); border: 1.5px dashed var(--gray-200);
+  border-radius: 10px; padding: 14px; margin-bottom: 18px;
+}
+.scratch-label { font-size: 11px; color: var(--gray-400); font-weight: 600; margin-bottom: 6px; }
+.scratch-input {
+  width: 100%; min-height: 65px; border: 1px solid var(--gray-200);
+  border-radius: 8px; padding: 8px 10px; font-size: 13px;
+  resize: vertical; background: white; font-family: inherit; color: var(--gray-800);
+}
+.scratch-input:focus { outline: none; border-color: var(--blue); }
+
+.opts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.opt-btn {
+  background: var(--gray-50); border: 1.5px solid var(--gray-200);
+  border-radius: 10px; padding: 13px 14px; font-size: 14px;
+  cursor: pointer; transition: all 0.18s; text-align: left;
+  color: var(--gray-800); font-weight: 500; font-family: inherit;
+}
+.opt-btn:hover:not(:disabled) { border-color: var(--blue); background: var(--blue-light); }
+.opt-btn.selected { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+.opt-btn.correct { border-color: var(--green); background: var(--green-light); color: #065f46; }
+.opt-btn.wrong { border-color: var(--red); background: var(--red-light); color: #b91c1c; }
+
+.ans-input {
+  width: 100%; padding: 13px 16px; border: 1.5px solid var(--gray-200);
+  border-radius: 10px; font-size: 17px; text-align: center;
+  margin-bottom: 18px; font-family: inherit; color: var(--gray-800);
+}
+.ans-input:focus { outline: none; border-color: var(--blue); }
+
+.feedback {
+  border-radius: 10px; padding: 13px 16px; font-size: 13px;
+  font-weight: 500; margin-bottom: 16px; line-height: 1.6; display: none;
+}
+.fb-ok { background: var(--green-light); border: 1.5px solid var(--green); color: #065f46; }
+.fb-no { background: var(--red-light); border: 1.5px solid var(--red); color: #b91c1c; }
+
+.action-row { display: flex; gap: 10px; }
+.btn-submit {
+  flex: 2; background: var(--blue); color: white; border: none;
+  border-radius: 10px; padding: 13px; font-size: 14px;
+  font-weight: 700; cursor: pointer; transition: background 0.2s; font-family: inherit;
+}
+.btn-submit:hover { background: var(--blue-dark); }
+.btn-submit:disabled { background: var(--gray-400); cursor: not-allowed; }
+.btn-prev, .btn-next {
+  flex: 1; padding: 13px; border-radius: 10px; font-size: 14px;
+  font-weight: 600; cursor: pointer; border: 1.5px solid var(--gray-200);
+  background: white; color: var(--gray-600); transition: all 0.18s; font-family: inherit;
+}
+.btn-prev:hover { border-color: var(--blue); color: var(--blue); }
+.btn-next { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
+.btn-next:hover { background: var(--blue); color: white; }
+.btn-finish {
+  flex: 1; padding: 13px; border-radius: 10px; font-size: 14px;
+  font-weight: 700; cursor: pointer; border: none;
+  background: var(--green); color: white; font-family: inherit;
+}
+.btn-finish:hover { opacity: 0.9; }
+
+/* ====== RESULTS PAGE ====== */
+#page-results { max-width: 680px; margin: 0 auto; padding: 16px; }
+.results-hero {
+  background: linear-gradient(135deg, var(--blue), var(--green));
+  border-radius: var(--radius-lg); padding: 32px 24px; color: white;
+  text-align: center; margin-bottom: 20px;
+}
+.score-ring {
+  width: 110px; height: 110px; border-radius: 50%;
+  border: 5px solid rgba(255,255,255,0.5);
+  display: flex; align-items: center; justify-content: center;
+  margin: 16px auto 12px; flex-direction: column;
+}
+.score-pct { font-size: 34px; font-weight: 900; line-height: 1; }
+.score-sub { font-size: 12px; opacity: 0.8; }
+.results-title { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+.results-desc { font-size: 13px; opacity: 0.85; }
+
+.panel {
+  background: white; border-radius: var(--radius-lg);
+  border: 1.5px solid var(--gray-200); padding: 20px; margin-bottom: 16px;
+}
+.panel.danger { border-color: #fecaca; }
+.panel.info { border-color: #bfdbfe; }
+.panel h3 { font-size: 14px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+.panel.danger h3 { color: #b91c1c; }
+.panel.info h3 { color: #1e40af; }
+
+.err-item {
+  border-left: 3px solid var(--red); padding: 10px 14px;
+  margin-bottom: 10px; background: #fff5f5; border-radius: 0 8px 8px 0;
+}
+.err-q { font-size: 13px; font-weight: 700; color: var(--gray-800); margin-bottom: 3px; }
+.err-detail { font-size: 12px; color: var(--gray-600); }
+.err-concept { display: inline-block; margin-top: 5px; font-size: 10px; font-weight: 700; padding: 2px 8px; background: #fee2e2; color: #991b1b; border-radius: 20px; }
+
+.rem-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gray-100); }
+.rem-item:last-child { border-bottom: none; }
+.rem-icon { width: 30px; height: 30px; border-radius: 8px; background: var(--blue-light); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.rem-text strong { font-size: 13px; color: var(--gray-800); display: block; margin-bottom: 2px; }
+.rem-text span { font-size: 12px; color: var(--gray-600); }
+
+.btn-export {
+  width: 100%; padding: 13px; border-radius: var(--radius);
+  border: 1.5px solid var(--blue); background: white;
+  color: var(--blue); font-size: 14px; font-weight: 700;
+  cursor: pointer; margin-bottom: 10px; font-family: inherit;
+}
+.btn-export:hover { background: var(--blue-light); }
+.btn-restart {
+  width: 100%; padding: 13px; border-radius: var(--radius);
+  border: none; background: var(--blue);
+  color: white; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+}
+.btn-restart:hover { background: var(--blue-dark); }
+
+@media (max-width: 500px) {
+  .opts-grid { grid-template-columns: 1fr; }
+  .q-grid { grid-template-columns: 1fr 1fr; }
+  .hero { padding: 22px; }
+  .hero h1 { font-size: 18px; }
+  .action-row { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ TEACHER PAGE ============ -->
+<div id="page-teacher" class="page active">
+  <div id="page-teacher-inner" style="max-width:960px; margin:0 auto; padding:20px;">
+    <div class="hero">
+      <h1>🎓 台灣小學高年級數學評量系統</h1>
+      <p>涵蓋五、六年級十大核心概念 ｜ 即時線上作答 ｜ 自動錯題分析 ｜ 補救教學報告</p>
+      <div class="hero-badges">
+        <span class="hero-badge">📐 五大主題</span>
+        <span class="hero-badge">📝 20題精選</span>
+        <span class="hero-badge">📱 平板友善</span>
+        <span class="hero-badge">📊 即時回饋</span>
+      </div>
+    </div>
+
+    <div class="section-label">題目一覽</div>
+    <div class="q-grid" id="q-grid"></div>
+
+    <button class="btn-primary" onclick="showQrPanel()">🔲 產生 QR Code 供學生掃描作答</button>
+
+    <div id="qr-panel" class="qr-panel" style="display:none">
+      <div class="section-label">設定測驗網址</div>
+      <div class="qr-notice">
+        ⚠️ <strong>使用說明：</strong>請將這份 <code>math_quiz.html</code> 檔案上傳到您的學校伺服器、Google Drive（公開分享）、或 GitHub Pages。<br>
+        將該網址貼入下方欄位，點「更新 QR Code」，即可讓學生掃描後直接進入測驗頁面。<br>
+        📌 若只要本機測試，可直接點下方「開始測驗（示範）」。
+      </div>
+      <div class="qr-url-input-row">
+        <label>測驗網址：</label>
+        <input class="qr-url-input" id="url-input" type="url"
+          placeholder="https://your-school.edu.tw/math_quiz.html"
+          value="" />
+        <button class="btn-gen" onclick="updateQR()">更新 QR</button>
+      </div>
+      <div class="qr-display">
+        <div id="qrcode-img"></div>
+        <div class="qr-current-url" id="qr-url-display">尚未設定網址</div>
+      </div>
+      <div style="text-align:center; margin-top:20px;">
+        <button class="btn-start-demo" onclick="startQuiz()">▶ 開始測驗（本機示範模式）</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ QUIZ PAGE ============ -->
+<div id="page-quiz" class="page">
+  <div class="quiz-header">
+    <div class="quiz-meta">
+      <div>
+        <div style="font-size:11px;opacity:0.75;margin-bottom:3px">台灣小學高年級數學評量</div>
+        <div class="quiz-topic" id="quiz-topic">—</div>
+      </div>
+      <div class="quiz-counter">
+        <div class="sm">作答進度</div>
+        <div class="big" id="quiz-count">0/20</div>
+      </div>
+    </div>
+    <div class="prog-row">
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      <div class="prog-pct" id="prog-pct">0%</div>
+    </div>
+  </div>
+  <div id="quiz-body"></div>
+</div>
+
+<!-- ============ RESULTS PAGE ============ -->
+<div id="page-results" class="page">
+  <div class="results-hero">
+    <div style="font-size:13px;opacity:0.8;">測驗完成</div>
+    <div class="score-ring">
+      <div class="score-pct" id="r-pct">—</div>
+      <div class="score-sub">分數</div>
+    </div>
+    <div class="results-title" id="r-title">成績統計</div>
+    <div class="results-desc" id="r-desc">計算中…</div>
+  </div>
+
+  <div class="panel danger">
+    <h3>❌ 錯誤題目分析</h3>
+    <div id="r-errors"></div>
+  </div>
+  <div class="panel info">
+    <h3>📚 補救教學建議</h3>
+    <div id="r-remedial"></div>
+  </div>
+
+  <button class="btn-export" onclick="exportReport()">⬇ 下載錯題報告（補救教學用）</button>
+  <button class="btn-restart" onclick="goTeacher()">🏠 回到教師頁面</button>
+</div>
+
+<script>
+// ==============================
+// DATA
+// ==============================
+const QS = [
+  { id:1, topic:'整數四則運算', cat:'n', text:'計算：(45 + 27) × 3 − 18 ÷ 6 = ?', type:'input', ans:'213', concept:'四則運算順序（先乘除後加減、括號優先）', expl:'括號 45+27=72，×3=216，18÷6=3，216−3=213', rem:'複習四則運算順序，加強括號運算練習' },
+  { id:2, topic:'因數與倍數', cat:'n', text:'下列何者同時是 24 和 36 的公因數？', type:'choice', opts:['A. 5','B. 8','C. 12','D. 15'], ans:'C', concept:'公因數與最大公因數', expl:'24因數：1,2,3,4,6,8,12,24；36因數：…,12,18,36。12是最大公因數', rem:'練習列出因數，理解最大公因數的求法' },
+  { id:3, topic:'分數加法', cat:'f', text:'計算 3/4 + 2/5（填入最簡分數，如：7/20）', type:'input', ans:'23/20', concept:'異分母分數加法（通分）', expl:'通分後 15/20 + 8/20 = 23/20', rem:'加強通分練習，複習最小公倍數求法' },
+  { id:4, topic:'分數乘法', cat:'f', text:'一條繩子長 4/5 公尺，用了其中的 3/4，用了多少公尺？', type:'input', ans:'3/5', concept:'分數乘法應用', expl:'4/5 × 3/4 = 12/20 = 3/5 公尺', rem:'練習分數乘法，注意化簡為最簡分數' },
+  { id:5, topic:'小數乘法', cat:'n', text:'3.6 × 2.5 = ?', type:'input', ans:'9', concept:'小數乘法（小數點位置）', expl:'36×25=900，小數共2位，900÷100=9', rem:'複習小數乘法計算步驟，注意小數點位移' },
+  { id:6, topic:'比與比例', cat:'a', text:'男女生比為 3：4，全班 28 人，女生有幾人？', type:'choice', opts:['A. 12人','B. 16人','C. 14人','D. 18人'], ans:'B', concept:'比例應用問題', expl:'女生佔 4/(3+4)=4/7，28×4/7=16人', rem:'加強比例關係理解，練習比例應用題型' },
+  { id:7, topic:'百分率折扣', cat:'n', text:'衣服原價 500 元，打八折售出，售價是多少元？', type:'choice', opts:['A. 400元','B. 380元','C. 420元','D. 450元'], ans:'A', concept:'百分率與折扣計算', expl:'八折 = 80%，500×0.8=400元', rem:'練習折扣、百分率換算與乘法計算' },
+  { id:8, topic:'三角形面積', cat:'g', text:'三角形底邊 12 公分，高 8 公分，面積是多少平方公分？', type:'input', ans:'48', concept:'三角形面積公式（底×高÷2）', expl:'12×8÷2=48 平方公分', rem:'熟練三角形面積公式，特別注意要除以2' },
+  { id:9, topic:'圓的周長', cat:'g', text:'圓形半徑 7 公分，圓周長約幾公分？（π≈3.14）', type:'input', ans:'43.96', concept:'圓周長公式 C=2πr', expl:'2×3.14×7=43.96 公分', rem:'記憶圓周長公式 C=2πr，練習代入計算' },
+  { id:10, topic:'長方體體積', cat:'g', text:'長方體長5、寬4、高3公分，體積是多少立方公分？', type:'input', ans:'60', concept:'長方體體積公式 V=長×寬×高', expl:'5×4×3=60 立方公分', rem:'熟練長方體體積公式，理解三維空間概念' },
+  { id:11, topic:'帶餘除法', cat:'n', text:'35 人分組，每組 4 人，最多幾組？剩幾人？', type:'choice', opts:['A. 8組餘3人','B. 9組餘0人','C. 8組餘1人','D. 7組餘7人'], ans:'A', concept:'帶餘除法及生活應用', expl:'35÷4=8…3，即8組餘3人', rem:'練習帶餘除法，理解商和餘數的意義' },
+  { id:12, topic:'分數除法', cat:'f', text:'2/3 ÷ 4/9 = ?（填入最簡分數）', type:'input', ans:'3/2', concept:'分數除法（乘以倒數）', expl:'2/3 × 9/4 = 18/12 = 3/2', rem:'理解除以分數等於乘以其倒數，熟練化簡' },
+  { id:13, topic:'平均數', cat:'s', text:'五次考試：85、90、78、92、80，平均成績是幾分？', type:'input', ans:'85', concept:'平均數計算（總和÷個數）', expl:'(85+90+78+92+80)÷5=425÷5=85', rem:'練習平均數計算，注意先求總和再除以個數' },
+  { id:14, topic:'代數方程', cat:'a', text:'□ × 6 + 4 = 34，□ = ?', type:'input', ans:'5', concept:'基礎一元一次方程（逆運算）', expl:'□×6=34−4=30，□=30÷6=5', rem:'加強逆運算概念，練習解簡單代數方程' },
+  { id:15, topic:'速率問題', cat:'a', text:'以時速 60 公里行駛 2.5 小時，共走幾公里？', type:'input', ans:'150', concept:'速率×時間=距離（D=S×T）', expl:'60×2.5=150 公里', rem:'熟練速率公式，練習速率時間距離應用題' },
+  { id:16, topic:'折線圖分析', cat:'s', text:'某月氣溫：1日18°C、8日22°C、15日28°C、22日25°C，哪段上升最多？', type:'choice', opts:['A. 1日→8日','B. 8日→15日','C. 15日→22日','D. 22日→29日'], ans:'B', concept:'折線圖數據分析（變化量計算）', expl:'8→15日：22到28，上升6°C，最大', rem:'練習折線圖閱讀，學習計算前後差異量' },
+  { id:17, topic:'圓餅圖應用', cat:'s', text:'喜歡數學的佔40%，全班30人，喜歡數學的有幾人？', type:'input', ans:'12', concept:'百分比與實際數量換算', expl:'30×40%=30×0.4=12人', rem:'練習百分比應用，理解百分比與分數的關係' },
+  { id:18, topic:'三角形角度', cat:'g', text:'三角形兩角分別為 65° 和 48°，第三角是幾度？', type:'input', ans:'67', concept:'三角形內角和等於180°', expl:'180−65−48=67°', rem:'牢記三角形內角和=180°，多練角度計算' },
+  { id:19, topic:'最小公倍數', cat:'n', text:'紅燈每4秒、綠燈每6秒閃一次，下次同時閃是幾秒後？', type:'input', ans:'12', concept:'最小公倍數的生活應用', expl:'4和6的最小公倍數=12，12秒後再同時閃', rem:'練習求最小公倍數，理解週期性問題' },
+  { id:20, topic:'分數轉小數', cat:'f', text:'將 5/8 化成小數，是多少？', type:'input', ans:'0.625', concept:'分數與小數互換（長除法）', expl:'5÷8=0.625', rem:'練習分數化小數，理解除法與小數的關係' }
+];
+
+const TAGS = {n:{cls:'tag-n',label:'數與計算'},f:{cls:'tag-f',label:'分數'},g:{cls:'tag-g',label:'幾何'},a:{cls:'tag-a',label:'代數'},s:{cls:'tag-s',label:'統計'}};
+const ICONS = ['📖','✏️','🔢','📐','📊','🧮','📏','🎯','💡','🔍'];
+
+let curQ = 0, chosen = null, submitted = false;
+let answers = {}; // qid -> {userAns, correct}
+
+// ==============================
+// TEACHER
+// ==============================
+function buildGrid() {
+  document.getElementById('q-grid').innerHTML = QS.map(q => {
+    const t = TAGS[q.cat];
+    return `<div class="q-card">
+      <div class="q-num">第 ${q.id} 題</div>
+      <div class="q-title">${q.topic}</div>
+      <div class="q-snippet">${q.text.substring(0,42)}${q.text.length>42?'…':''}</div>
+      <span class="tag ${t.cls}">${t.label}</span>
+    </div>`;
+  }).join('');
+}
+
+function showQrPanel() {
+  const p = document.getElementById('qr-panel');
+  p.style.display = 'block';
+  p.scrollIntoView({behavior:'smooth'});
+}
+
+let qrInstance = null;
+function updateQR() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) { alert('請輸入有效的測驗網址'); return; }
+  const box = document.getElementById('qrcode-img');
+  box.innerHTML = '';
+  qrInstance = new QRCode(box, {
+    text: url, width: 160, height: 160,
+    colorDark: '#1a56db', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+  document.getElementById('qr-url-display').textContent = url;
+}
+
+// ==============================
+// QUIZ
+// ==============================
+function startQuiz() {
+  curQ = 0; chosen = null; submitted = false; answers = {};
+  showPage('page-quiz');
+  renderQ();
+}
+
+function renderQ() {
+  const q = QS[curQ];
+  submitted = (answers[q.id] !== undefined);
+  chosen = submitted ? answers[q.id].userAns : null;
+
+  document.getElementById('quiz-topic').textContent = q.topic;
+  const doneCount = Object.keys(answers).length;
+  document.getElementById('quiz-count').textContent = doneCount + '/20';
+  const pct = Math.round((curQ / QS.length) * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent = pct + '%';
+
+  const t = TAGS[q.cat];
+  let inputHTML = '';
+  if (q.type === 'choice') {
+    inputHTML = `<div class="opts-grid">${q.opts.map((o,i)=>`<button class="opt-btn" id="opt${i}" onclick="pickOpt('${o[0]}')">${o}</button>`).join('')}</div>`;
+  } else {
+    inputHTML = `<input class="ans-input" id="ans-input" type="text" placeholder="請輸入答案…" value="${submitted ? answers[q.id].userAns : ''}" />`;
+  }
+
+  let navHTML = '';
+  if (curQ > 0) navHTML += `<button class="btn-prev" onclick="goQ(-1)">← 上題</button>`;
+  if (!submitted) navHTML += `<button class="btn-submit" onclick="doSubmit()">確認作答</button>`;
+  else if (curQ < QS.length - 1) navHTML += `<button class="btn-next" onclick="goQ(1)">下一題 →</button>`;
+  else navHTML += `<button class="btn-finish" onclick="doFinish()">完成測驗 ✓</button>`;
+
+  document.getElementById('quiz-body').innerHTML = `
+    <div class="q-card-main">
+      <div class="q-header">
+        <div class="q-num-circle">${q.id}</div>
+        <span class="q-tag ${t.cls}">${t.label}</span>
+        <span class="q-cat">${q.topic}</span>
+      </div>
+      <div class="q-text">${q.text}</div>
+      <div class="scratch">
+        <div class="scratch-label">✏️ 計算草稿欄</div>
+        <textarea class="scratch-input" placeholder="在此列式計算…"></textarea>
+      </div>
+      ${inputHTML}
+      <div class="feedback" id="feedback"></div>
+      <div class="action-row">${navHTML}</div>
+    </div>`;
+
+  if (submitted) renderFeedback(q);
+}
+
+function pickOpt(letter) {
+  if (submitted) return;
+  chosen = letter;
+  document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+  const idx = ['A','B','C','D'].indexOf(letter);
+  document.getElementById('opt' + idx)?.classList.add('selected');
+}
+
+function doSubmit() {
+  const q = QS[curQ];
+  let ua = '';
+  if (q.type === 'choice') {
+    if (!chosen) { alert('請選擇一個選項！'); return; }
+    ua = chosen;
+  } else {
+    ua = (document.getElementById('ans-input')?.value || '').trim();
+    if (!ua) { alert('請輸入答案！'); return; }
+  }
+  const ok = (ua === q.ans);
+  answers[q.id] = { userAns: ua, correct: ok };
+  submitted = true;
+  renderFeedback(q);
+  // Update header
+  document.getElementById('quiz-count').textContent = Object.keys(answers).length + '/20';
+  // Change action row
+  const ar = document.querySelector('.action-row');
+  if (curQ < QS.length - 1) {
+    ar.innerHTML = (curQ > 0 ? `<button class="btn-prev" onclick="goQ(-1)">← 上題</button>` : '') + `<button class="btn-next" onclick="goQ(1)">下一題 →</button>`;
+  } else {
+    ar.innerHTML = `<button class="btn-finish" onclick="doFinish()">完成測驗 ✓</button>`;
+  }
+}
+
+function renderFeedback(q) {
+  const a = answers[q.id]; if (!a) return;
+  const fb = document.getElementById('feedback');
+  fb.style.display = 'block';
+  fb.className = 'feedback ' + (a.correct ? 'fb-ok' : 'fb-no');
+  fb.innerHTML = a.correct
+    ? `✅ 答對了！${q.expl}`
+    : `❌ 正確答案是 <strong>${q.ans}</strong>。${q.expl}`;
+  if (q.type === 'choice') {
+    ['A','B','C','D'].forEach((l,i)=>{
+      const b = document.getElementById('opt'+i);
+      if (!b) return;
+      b.disabled = true;
+      if (l === q.ans) b.classList.add('correct');
+      else if (l === a.userAns && !a.correct) b.classList.add('wrong');
+    });
+  } else {
+    const inp = document.getElementById('ans-input');
+    if (inp) inp.disabled = true;
+  }
+}
+
+function goQ(dir) {
+  chosen = null; submitted = false;
+  curQ = Math.max(0, Math.min(QS.length-1, curQ+dir));
+  renderQ();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function doFinish() {
+  const left = QS.length - Object.keys(answers).length;
+  if (left > 0 && !confirm(`還有 ${left} 題未作答，確定交卷？`)) return;
+  showResults();
+}
+
+// ==============================
+// RESULTS
+// ==============================
+function showResults() {
+  showPage('page-results');
+  let correct = 0, errors = [];
+  QS.forEach(q => {
+    const a = answers[q.id];
+    if (a && a.correct) correct++;
+    else errors.push(q);
+  });
+  const pct = Math.round(correct / QS.length * 100);
+  document.getElementById('r-pct').textContent = pct + '%';
+  document.getElementById('r-title').textContent = `答對 ${correct} / ${QS.length} 題`;
+  document.getElementById('r-desc').textContent = pct>=80 ? '表現優異！繼續保持！' : pct>=60 ? '基本掌握，部分概念需加強複習' : '需要加強，建議參考補救教學建議';
+
+  const errEl = document.getElementById('r-errors');
+  if (errors.length === 0) {
+    errEl.innerHTML = '<p style="color:#0e9f6e;font-weight:700;font-size:14px;">🎉 全部答對！完美表現！</p>';
+    document.querySelector('.panel.danger').style.borderColor = '#a7f3d0';
+  } else {
+    errEl.innerHTML = errors.map(q => {
+      const ua = answers[q.id]?.userAns || '（未作答）';
+      return `<div class="err-item">
+        <div class="err-q">第${q.id}題｜${q.topic}：${q.text.substring(0,36)}…</div>
+        <div class="err-detail">你的答案：${ua} ｜ 正確答案：${q.ans}</div>
+        <span class="err-concept">${q.concept}</span>
+      </div>`;
+    }).join('');
+  }
+
+  const concepts = [...new Set(errors.map(q=>q.concept))];
+  const rems = [...new Set(errors.map(q=>q.rem))];
+  const remEl = document.getElementById('r-remedial');
+  if (rems.length === 0) {
+    remEl.innerHTML = '<p style="color:#0e9f6e;font-size:14px;">無需補救！建議進行延伸挑戰題。</p>';
+  } else {
+    remEl.innerHTML = rems.map((r,i) => `
+      <div class="rem-item">
+        <div class="rem-icon">${ICONS[i%ICONS.length]}</div>
+        <div class="rem-text">
+          <strong>${concepts[i]}</strong>
+          <span>${r}</span>
+        </div>
+      </div>`).join('');
+  }
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function exportReport() {
+  let correct = 0, errors = [];
+  QS.forEach(q => {
+    const a = answers[q.id];
+    if (a && a.correct) correct++;
+    else errors.push(q);
+  });
+  const pct = Math.round(correct/QS.length*100);
+  const now = new Date().toLocaleString('zh-TW');
+  let txt = `╔══════════════════════════════════════╗\n`;
+  txt += `║  台灣小學高年級數學評量 — 錯題報告  ║\n`;
+  txt += `╚══════════════════════════════════════╝\n\n`;
+  txt += `報告產生時間：${now}\n`;
+  txt += `總成績：${correct}/${QS.length} 題（${pct}%）\n\n`;
+  txt += `━━━ 錯誤題目詳細分析 ━━━\n\n`;
+  if (errors.length === 0) { txt += '全部答對，無錯誤題目！\n'; }
+  else {
+    errors.forEach(q => {
+      const ua = answers[q.id]?.userAns || '（未作答）';
+      txt += `【第${q.id}題】${q.topic}\n`;
+      txt += `  題目：${q.text}\n`;
+      txt += `  學生答案：${ua} ｜ 正確答案：${q.ans}\n`;
+      txt += `  核心概念：${q.concept}\n`;
+      txt += `  詳細說明：${q.expl}\n`;
+      txt += `  補救建議：${q.rem}\n\n`;
+    });
+  }
+  txt += `━━━ 補救教學建議摘要 ━━━\n\n`;
+  [...new Set(errors.map(q=>q.rem))].forEach((r,i)=>{ txt += `${i+1}. ${r}\n`; });
+  const blob = new Blob([txt], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `數學評量錯題報告_${now.replace(/[/:]/g,'-')}.txt`;
+  a.click();
+}
+
+function goTeacher() {
+  answers = {}; curQ = 0; chosen = null; submitted = false;
+  showPage('page-teacher');
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// Init
+buildGrid();
+// Pre-fill URL with current page location if opened from file
+if (location.href.startsWith('http')) {
+  document.getElementById('url-input').value = location.href;
+}
+</script>
+</body>
+</html>
