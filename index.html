@@ -5,6 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>台灣小學高年級數學評量系統</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, push, get, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAFh8Dmf25j1D9rCpBpCpcxKLVBNsAF4m4",
+    authDomain:        "chinese-50d0c.firebaseapp.com",
+    databaseURL:       "https://chinese-50d0c-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:         "chinese-50d0c",
+    storageBucket:     "chinese-50d0c.firebasestorage.app",
+    messagingSenderId: "1044608618028",
+    appId:             "1:1044608618028:web:d95f2811e0dd61bbe30b89"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  window._mathSave = async (record) => {
+    try { await push(ref(db, "math_records"), record); return true; }
+    catch(e) { localStorage.setItem('math_'+Date.now(), JSON.stringify(record)); return false; }
+  };
+  window._mathLoad = async () => {
+    try {
+      const snap = await get(ref(db, "math_records"));
+      if (!snap.exists()) return [];
+      const val = snap.val();
+      return Object.entries(val).map(([k,v])=>({key:k,...v})).sort((a,b)=>b.key.localeCompare(a.key));
+    } catch(e) {
+      const r=[];
+      for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('math_'))try{r.push({key:k,...JSON.parse(localStorage.getItem(k))});}catch(e){}}
+      return r.sort((a,b)=>b.key.localeCompare(a.key));
+    }
+  };
+  window._mathClear = async () => {
+    try { await remove(ref(db, "math_records")); }
+    catch(e) { const ks=[]; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('math_'))ks.push(k);} ks.forEach(k=>localStorage.removeItem(k)); }
+  };
+</script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -24,6 +59,71 @@ body {
 }
 .page { display: none; }
 .page.active { display: block; }
+
+/* ====== LOGIN PAGE ====== */
+#page-login { max-width: 480px; margin: 0 auto; padding: 40px 20px; }
+.login-card {
+  background: white; border-radius: var(--radius-lg);
+  border: 1.5px solid var(--gray-200); padding: 32px 28px;
+}
+.login-logo {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: linear-gradient(135deg, var(--blue), var(--green));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; margin: 0 auto 18px;
+}
+.login-title { font-size: 20px; font-weight: 800; color: var(--gray-800); text-align: center; margin-bottom: 4px; }
+.login-sub { font-size: 13px; color: var(--gray-400); text-align: center; margin-bottom: 28px; }
+.id-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.id-field label { display: block; font-size: 12px; font-weight: 700; color: var(--gray-600); margin-bottom: 6px; letter-spacing: .04em; }
+.id-select {
+  width: 100%; padding: 11px 10px; border: 1.5px solid var(--gray-200);
+  border-radius: 10px; font-size: 15px; font-weight: 700; text-align: center;
+  color: var(--gray-800); background: var(--gray-50); font-family: inherit;
+  appearance: none; cursor: pointer;
+}
+.id-select:focus { outline: none; border-color: var(--blue); background: var(--blue-light); }
+.id-preview {
+  background: var(--blue-light); border: 1.5px solid #bfdbfe;
+  border-radius: 10px; padding: 12px 16px; text-align: center;
+  font-size: 16px; font-weight: 700; color: var(--blue);
+  margin-bottom: 20px; letter-spacing: .06em;
+}
+.btn-login {
+  width: 100%; background: linear-gradient(135deg, var(--blue), var(--green));
+  color: white; border: none; border-radius: var(--radius);
+  padding: 15px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: opacity .2s;
+}
+.btn-login:hover { opacity: .9; }
+
+/* ====== TEACHER DASHBOARD ====== */
+#teacher-records { margin-top: 24px; }
+.rec-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+.rec-stat { background: white; border: 1.5px solid var(--gray-200); border-radius: var(--radius); padding: 14px; text-align: center; }
+.rec-stat .num { font-size: 22px; font-weight: 800; color: var(--blue); }
+.rec-stat .lbl { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+.rec-item { background: white; border: 1.5px solid var(--gray-200); border-radius: var(--radius); padding: 13px 16px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s; }
+.rec-item:hover { border-color: var(--blue); }
+.rec-item-top { display: flex; justify-content: space-between; align-items: center; }
+.rec-name { font-size: 15px; font-weight: 700; color: var(--gray-800); }
+.rec-score { font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+.rec-score.high { background: var(--green-light); color: #065f46; }
+.rec-score.mid { background: var(--amber-light); color: #92400e; }
+.rec-score.low { background: var(--red-light); color: #b91c1c; }
+.rec-meta { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+.rec-detail { display: none; background: var(--gray-50); border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 13px; line-height: 2; }
+.weak-badge { display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:#fee2e2;color:#991b1b;margin:2px; }
+.btn-clear-rec { background: transparent; border: 1.5px solid #fecaca; color: #b91c1c; border-radius: 10px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 12px; font-family: inherit; }
+.btn-clear-rec:hover { background: var(--red-light); }
+
+/* ====== TEACHER LOGIN GATE ====== */
+.teacher-gate { background: var(--gray-50); border: 1.5px solid var(--gray-200); border-radius: var(--radius); padding: 20px; margin-top: 20px; }
+.teacher-gate input { width:100%; padding:10px 14px; border:1.5px solid var(--gray-200); border-radius:10px; font-size:15px; font-family:inherit; margin:8px 0 12px; }
+.teacher-gate input:focus { outline:none; border-color:var(--blue); }
+
+/* ====== STUDENT ID IN HEADER ====== */
+.student-id-chip { font-size:12px; background:rgba(255,255,255,0.2); padding:3px 10px; border-radius:20px; margin-top:4px; display:inline-block; }
 
 /* ====== TEACHER PAGE ====== */
 #page-teacher { max-width: 960px; margin: 0 auto; padding: 20px; }
@@ -306,6 +406,14 @@ body {
 
     <button class="btn-primary" onclick="showQrPanel()">🔲 產生 QR Code 供學生掃描作答</button>
 
+    <div class="teacher-gate">
+      <div class="section-label">雲端作答歷程查閱</div>
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:4px">輸入教師密碼以查閱全班作答記錄與補救教學建議</p>
+      <input type="password" id="t-pwd" placeholder="教師密碼（預設：teacher123）" onkeydown="if(event.key==='Enter')verifyTeacher()"/>
+      <button class="btn-gen" onclick="verifyTeacher()">🔓 查閱記錄</button>
+    </div>
+    <div id="teacher-records" style="display:none"></div>
+
     <div id="qr-panel" class="qr-panel" style="display:none">
       <div class="section-label">設定測驗網址</div>
       <div class="qr-notice">
@@ -325,8 +433,50 @@ body {
         <div class="qr-current-url" id="qr-url-display">尚未設定網址</div>
       </div>
       <div style="text-align:center; margin-top:20px;">
-        <button class="btn-start-demo" onclick="startQuiz()">▶ 開始測驗（本機示範模式）</button>
+        <button class="btn-start-demo" onclick="showPage('page-login')">▶ 開始作答</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LOGIN PAGE ============ -->
+<div id="page-login" class="page">
+  <div style="max-width:480px;margin:0 auto;padding:40px 20px;">
+    <div style="margin-bottom:16px">
+      <button onclick="showPage('page-teacher')" style="background:transparent;border:1.5px solid var(--gray-200);border-radius:10px;padding:7px 16px;font-size:13px;color:var(--gray-600);cursor:pointer;font-family:inherit">← 返回</button>
+    </div>
+    <div class="login-card">
+      <div class="login-logo">🔢</div>
+      <div class="login-title">數學評量系統</div>
+      <div class="login-sub">請選擇您的年班號，再開始作答</div>
+      <div class="id-row">
+        <div class="id-field">
+          <label>年 級</label>
+          <select class="id-select" id="sel-grade" onchange="updatePreview()">
+            <option value="">選年</option>
+            <option value="五">五</option>
+            <option value="六">六</option>
+          </select>
+        </div>
+        <div class="id-field">
+          <label>班 級</label>
+          <select class="id-select" id="sel-class" onchange="updatePreview()">
+            <option value="">選班</option>
+            <option>1</option><option>2</option><option>3</option>
+            <option>4</option><option>5</option><option>6</option>
+            <option>7</option><option>8</option><option>9</option><option>10</option>
+          </select>
+        </div>
+        <div class="id-field">
+          <label>座 號</label>
+          <select class="id-select" id="sel-num" onchange="updatePreview()">
+            <option value="">選號</option>
+            <script>for(let i=1;i<=35;i++)document.write(`<option>${i}</option>`);</script>
+          </select>
+        </div>
+      </div>
+      <div class="id-preview" id="id-preview">請選擇年 · 班 · 號</div>
+      <button class="btn-login" onclick="doLogin()">▶ 開始測驗</button>
     </div>
   </div>
 </div>
@@ -338,6 +488,7 @@ body {
       <div>
         <div style="font-size:11px;opacity:0.75;margin-bottom:3px">台灣小學高年級數學評量</div>
         <div class="quiz-topic" id="quiz-topic">—</div>
+        <div class="student-id-chip" id="header-student-id"></div>
       </div>
       <div class="quiz-counter">
         <div class="sm">作答進度</div>
@@ -408,7 +559,86 @@ const TAGS = {n:{cls:'tag-n',label:'數與計算'},f:{cls:'tag-f',label:'分數'
 const ICONS = ['📖','✏️','🔢','📐','📊','🧮','📏','🎯','💡','🔍'];
 
 let curQ = 0, chosen = null, submitted = false;
-let answers = {}; // qid -> {userAns, correct}
+let answers = {};
+let studentId = '';
+
+// ==============================
+// LOGIN
+// ==============================
+function updatePreview() {
+  const g = document.getElementById('sel-grade').value;
+  const c = document.getElementById('sel-class').value;
+  const n = document.getElementById('sel-num').value;
+  const prev = document.getElementById('id-preview');
+  if (g && c && n) {
+    prev.textContent = `${g}年 ${c}班 ${n}號`;
+    prev.style.color = 'var(--blue)';
+  } else {
+    prev.textContent = '請選擇年 · 班 · 號';
+    prev.style.color = 'var(--gray-400)';
+  }
+}
+function doLogin() {
+  const g = document.getElementById('sel-grade').value;
+  const c = document.getElementById('sel-class').value;
+  const n = document.getElementById('sel-num').value;
+  if (!g || !c || !n) { alert('請選擇完整的年、班、號！'); return; }
+  studentId = `${g}年${c}班${n}號`;
+  document.getElementById('header-student-id').textContent = '👤 ' + studentId;
+  startQuiz();
+}
+
+// ==============================
+// TEACHER AUTH & DASHBOARD
+// ==============================
+function verifyTeacher() {
+  if (document.getElementById('t-pwd').value !== 'teacher123') { alert('密碼錯誤！'); return; }
+  loadTeacherRecords();
+}
+async function loadTeacherRecords() {
+  const box = document.getElementById('teacher-records');
+  box.style.display = 'block';
+  box.innerHTML = '<p style="font-size:13px;color:var(--gray-400);padding:12px 0">⏳ 載入雲端記錄中…</p>';
+  const recs = window._mathLoad ? await window._mathLoad() : [];
+  if (recs.length === 0) { box.innerHTML = '<p style="font-size:13px;color:var(--gray-400);padding:12px 0">尚無作答記錄。</p>'; return; }
+  const avg = (recs.reduce((s,r)=>s+r.score,0)/recs.length).toFixed(1);
+  const wrongMap = {};
+  recs.forEach(r => { (r.wrongTopics||[]).forEach(t=>{ wrongMap[t]=(wrongMap[t]||0)+1; }); });
+  const topWeak = Object.entries(wrongMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  box.innerHTML = `
+    <div class="section-label" style="margin-top:8px">全班成績總覽</div>
+    <div class="rec-stats">
+      <div class="rec-stat"><div class="num">${recs.length}</div><div class="lbl">作答人數</div></div>
+      <div class="rec-stat"><div class="num">${avg}%</div><div class="lbl">平均成績</div></div>
+      <div class="rec-stat"><div class="num">${topWeak[0]?topWeak[0][0]:'—'}</div><div class="lbl">最多錯誤題型</div></div>
+    </div>
+    ${topWeak.length ? `<div class="section-label">補救教學建議（高錯誤率主題）</div>
+    <div style="margin-bottom:16px">${topWeak.map(([t,c])=>`<span class="weak-badge">⚠ ${t}（${c}人答錯）</span>`).join('')}</div>` : ''}
+    <div class="section-label">學生作答清單</div>
+    ${recs.map((r,i)=>{
+      const cls = r.pct>=80?'high':r.pct>=60?'mid':'low';
+      return `<div class="rec-item" onclick="toggleDetail(this,${i})">
+        <div class="rec-item-top">
+          <span class="rec-name">👤 ${r.name}</span>
+          <span class="rec-score ${cls}">${r.score}/${r.total || 20}題 (${r.pct}%)</span>
+        </div>
+        <div class="rec-meta">${r.time} ｜ 用時 ${r.elapsed}秒</div>
+        <div class="rec-detail" id="detail-${i}">
+          ${r.wrongTopics&&r.wrongTopics.length?`<strong>錯誤題型：</strong>${r.wrongTopics.map(t=>`<span class="weak-badge">${t}</span>`).join('')}<br>`:'✅ 全部答對！'}
+        </div>
+      </div>`;
+    }).join('')}
+    <button class="btn-clear-rec" onclick="clearRecords()">🗑 清除全部記錄</button>`;
+}
+function toggleDetail(el, i) {
+  const d = document.getElementById('detail-'+i);
+  d.style.display = d.style.display==='block' ? 'none' : 'block';
+}
+async function clearRecords() {
+  if (!confirm('確定清除全部作答記錄？')) return;
+  if (window._mathClear) await window._mathClear();
+  loadTeacherRecords();
+}
 
 // ==============================
 // TEACHER
@@ -571,8 +801,10 @@ function doFinish() {
 // ==============================
 // RESULTS
 // ==============================
-function showResults() {
+async function showResults() {
   showPage('page-results');
+  const startTs = window._quizStartTs || Date.now();
+  const elapsed = Math.round((Date.now() - startTs) / 1000);
   let correct = 0, errors = [];
   QS.forEach(q => {
     const a = answers[q.id];
@@ -614,6 +846,29 @@ function showResults() {
         </div>
       </div>`).join('');
   }
+
+  // ── 儲存至 Firebase ──
+  const wrongTopics = errors.map(q => q.topic);
+  const record = {
+    name: studentId || '未知',
+    score: correct,
+    total: QS.length,
+    pct: pct,
+    elapsed: elapsed,
+    wrongTopics: wrongTopics,
+    wrongConcepts: [...new Set(errors.map(q=>q.concept))],
+    time: new Date().toLocaleString('zh-TW'),
+    answers: Object.fromEntries(QS.map(q => [q.id, answers[q.id]?.userAns || '未作答']))
+  };
+  if (window._mathSave) {
+    const ok = await window._mathSave(record);
+    const toast = document.createElement('div');
+    toast.textContent = ok ? '☁ 作答記錄已儲存至雲端' : '💾 作答記錄已儲存至本機';
+    toast.style.cssText = `position:fixed;bottom:20px;right:20px;background:${ok?'#0e9f6e':'#f59e0b'};color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s`;
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.style.opacity='1',100);
+    setTimeout(()=>{toast.style.opacity='0';setTimeout(()=>toast.remove(),400);},3000);
+  }
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -629,6 +884,7 @@ function exportReport() {
   let txt = `╔══════════════════════════════════════╗\n`;
   txt += `║  台灣小學高年級數學評量 — 錯題報告  ║\n`;
   txt += `╚══════════════════════════════════════╝\n\n`;
+  txt += `學生：${studentId || '未知'}\n`;
   txt += `報告產生時間：${now}\n`;
   txt += `總成績：${correct}/${QS.length} 題（${pct}%）\n\n`;
   txt += `━━━ 錯誤題目詳細分析 ━━━\n\n`;
@@ -649,25 +905,38 @@ function exportReport() {
   const blob = new Blob([txt], {type:'text/plain;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `數學評量錯題報告_${now.replace(/[/:]/g,'-')}.txt`;
+  a.download = `數學評量_${studentId||'學生'}_${now.replace(/[/:]/g,'-')}.txt`;
   a.click();
 }
 
 function goTeacher() {
-  answers = {}; curQ = 0; chosen = null; submitted = false;
+  answers = {}; curQ = 0; chosen = null; submitted = false; studentId = '';
   showPage('page-teacher');
 }
 
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
-// Init
+// ── QUIZ START WITH TIMER ──
+function startQuiz() {
+  curQ = 0; chosen = null; submitted = false; answers = {};
+  window._quizStartTs = Date.now();
+  showPage('page-quiz');
+  renderQ();
+}
+
+// ── INIT ──
 buildGrid();
-// Pre-fill URL with current page location if opened from file
+// 自動填入目前網址至 QR 欄位
 if (location.href.startsWith('http')) {
   document.getElementById('url-input').value = location.href;
+  // 學生掃 QR Code 後直接進入登入頁
+  if (location.search.includes('student') || location.hash === '#student') {
+    showPage('page-login');
+  }
 }
 </script>
 </body>
